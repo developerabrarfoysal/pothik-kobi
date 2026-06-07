@@ -46,3 +46,7 @@ deploy-production-env.sh
 vercel-prod-secret-setup-npx.sh
 auto-prod-fix-now.sh
 final-prod-404-fix.sh
+fix-neon-health-deploy-safe.sh
+add-neon-health-and-deploy.sh
+fix-vercel-404-domain.sh
+.local-env-backup/
