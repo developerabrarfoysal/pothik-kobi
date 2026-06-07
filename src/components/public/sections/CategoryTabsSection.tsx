@@ -1,5 +1,7 @@
 "use client";
 
+import { absoluteUrl } from "@/lib/absolute-url";
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { WritingCard } from "../WritingCard";
@@ -26,7 +28,7 @@ export function CategoryTabsSection({ title, categories }: CategoryTabsSectionPr
     setActiveSlug(slug);
     setLoading(true);
     try {
-      const res = await fetch(`/api/writings?category=${slug}&limit=6`);
+      const res = await fetch(absoluteUrl(`/api/writings?category=${slug}&limit=6`));
       const data = await res.json();
       setWritings(data.writings || []);
     } finally {
