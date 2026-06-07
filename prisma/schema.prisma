@@ -1,0 +1,288 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  auditLogs    AuditLog[]
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model Page {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  excerpt     String?
+  status      ContentStatus @default(DRAFT)
+  isHomepage  Boolean       @default(false)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  hero        PageHero?
+  sections    PageSection[]
+  seoMeta     SeoMeta?
+}
+
+model PageHero {
+  id              String     @id @default(cuid())
+  pageId          String     @unique
+  page            Page       @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  title           String
+  subtitle        String?
+  description     String?
+  backgroundImageId String?
+  backgroundImage MediaAsset? @relation(fields: [backgroundImageId], references: [id])
+  overlayColor    String?
+  config          Json       @default("{}")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model PageSection {
+  id        String      @id @default(cuid())
+  pageId    String
+  page      Page        @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  type      SectionType
+  title     String?
+  sortOrder Int         @default(0)
+  isVisible Boolean     @default(true)
+  config    Json        @default("{}")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([pageId, sortOrder])
+}
+
+model Writing {
+  id              String          @id @default(cuid())
+  title           String
+  slug            String          @unique
+  excerpt         String?
+  content         String          @db.Text
+  featuredImageId String?
+  featuredImage   MediaAsset?     @relation("WritingFeaturedImage", fields: [featuredImageId], references: [id])
+  categoryId      String?
+  category        WritingCategory? @relation(fields: [categoryId], references: [id])
+  status          ContentStatus   @default(DRAFT)
+  publishedAt     DateTime?
+  readingTime     Int             @default(1)
+  viewCount       Int             @default(0)
+  seoTitle        String?
+  seoDescription  String?
+  ogImageId       String?
+  ogImage         MediaAsset?     @relation("WritingOgImage", fields: [ogImageId], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  tags            WritingTagOnWriting[]
+  videos          VideoAttachment[]
+  galleryItems    WritingGalleryItem[]
+  seoMeta         SeoMeta?
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+}
+
+model WritingCategory {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  color       String?
+  sortOrder   Int       @default(0)
+  isVisible   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  writings    Writing[]
+}
+
+model WritingTag {
+  id        String              @id @default(cuid())
+  name      String              @unique
+  slug      String              @unique
+  createdAt DateTime            @default(now())
+  writings  WritingTagOnWriting[]
+}
+
+model WritingTagOnWriting {
+  writingId String
+  tagId     String
+  writing   Writing    @relation(fields: [writingId], references: [id], onDelete: Cascade)
+  tag       WritingTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([writingId, tagId])
+}
+
+model WritingGalleryItem {
+  id        String     @id @default(cuid())
+  writingId String
+  writing   Writing    @relation(fields: [writingId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     MediaAsset @relation(fields: [mediaId], references: [id])
+  caption   String?
+  sortOrder Int        @default(0)
+
+  @@index([writingId, sortOrder])
+}
+
+model MediaAsset {
+  id           String   @id @default(cuid())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  altText      String?
+  caption      String?
+  storageUrl   String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  pageHeroes       PageHero[]
+  featuredWritings Writing[] @relation("WritingFeaturedImage")
+  ogWritings       Writing[] @relation("WritingOgImage")
+  galleryItems     GalleryItem[]
+  writingGallery   WritingGalleryItem[]
+  seoMetas         SeoMeta[]
+}
+
+model VideoAttachment {
+  id          String        @id @default(cuid())
+  title       String?
+  provider    VideoProvider
+  originalUrl String
+  embedUrl    String
+  thumbnail   String?
+  sortOrder   Int           @default(0)
+  writingId   String?
+  writing     Writing?      @relation(fields: [writingId], references: [id], onDelete: Cascade)
+  sectionKey  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([writingId])
+}
+
+model GalleryAlbum {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  description String?
+  isVisible   Boolean       @default(true)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  items       GalleryItem[]
+}
+
+model GalleryItem {
+  id        String       @id @default(cuid())
+  albumId   String
+  album     GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     MediaAsset   @relation(fields: [mediaId], references: [id])
+  caption   String?
+  sortOrder Int          @default(0)
+
+  @@index([albumId, sortOrder])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model NavigationItem {
+  id        String   @id @default(cuid())
+  label     String
+  href      String
+  sortOrder Int      @default(0)
+  isVisible Boolean  @default(true)
+  openInNew Boolean  @default(false)
+  parentId  String?
+  parent    NavigationItem?  @relation("NavChildren", fields: [parentId], references: [id])
+  children  NavigationItem[] @relation("NavChildren")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+model SeoMeta {
+  id              String     @id @default(cuid())
+  pageId          String?    @unique
+  page            Page?      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  writingId       String?    @unique
+  writing         Writing?   @relation(fields: [writingId], references: [id], onDelete: Cascade)
+  title           String?
+  description     String?
+  canonicalUrl    String?
+  ogImageId       String?
+  ogImage         MediaAsset? @relation(fields: [ogImageId], references: [id])
+  noIndex         Boolean    @default(false)
+  jsonLd          Json?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model AuditLog {
+  id        String    @id @default(cuid())
+  adminId   String?
+  admin     AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt])
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum SectionType {
+  HERO_3D
+  FEATURED_WRITINGS
+  LATEST_WRITINGS
+  CATEGORY_TABS
+  ABOUT_WRITER
+  QUOTE_BLOCK
+  IMAGE_GALLERY
+  VIDEO_GALLERY
+  CUSTOM_RICH_TEXT
+  CUSTOM_GRID
+  CUSTOM_CARDS
+  CONTACT_BLOCK
+  CTA_BLOCK
+  HTML_SAFE_BLOCK
+}
+
+enum VideoProvider {
+  YOUTUBE
+  FACEBOOK
+}
