@@ -45,3 +45,4 @@ vercel-prod-secret-setup.sh
 deploy-production-env.sh
 vercel-prod-secret-setup-npx.sh
 auto-prod-fix-now.sh
+final-prod-404-fix.sh
